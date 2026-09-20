@@ -79,14 +79,19 @@ public class BooksStepDef {
 
         System.out.println("********Details for book ID*********** "+bookId);
 
-        Book_details book = books.stream()
-                .filter(b -> b.getId() == bookId)
-                .findFirst()
-                .orElseThrow(
-                        () -> new AssertionError(
-                                "Book with id " + bookId + " not found"
-                        )
-                );
+        Book_details book = null;
+
+        for (Book_details b : books) {
+            if (b.getId() == bookId) {
+                book = b;
+                break;
+            }
+        }
+
+        if (book == null) {
+            throw new AssertionError("Book with id " + bookId + " not found");
+        }
+
 
         // Convert DataTable into key/value pairs
         var data = dataTable.asMap(String.class, String.class);
