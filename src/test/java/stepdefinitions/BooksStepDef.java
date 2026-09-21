@@ -1,9 +1,12 @@
 package stepdefinitions;
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 //import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.Map;
 
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -11,6 +14,7 @@ import io.cucumber.java.en.Then;
 import io.cucumber.datatable.DataTable;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
+import org.hamcrest.Matchers;
 import pojo.Book_details;
 
 public class BooksStepDef {
@@ -28,6 +32,7 @@ public class BooksStepDef {
                         .get("/books");
 
         // Deserialize JSON array into List<Book>
+
         books = response.as(new TypeRef<List<Book_details>>() {});
         System.out.println(response.asPrettyString());
 
@@ -42,7 +47,7 @@ public class BooksStepDef {
                 response.getStatusCode()
         );
         System.out.println(
-                "✅ Status code validation successful! Expected: "
+                "Status code validation successful! Expected: "
                         + expectedStatusCode
                         + ", Actual: "
                         + actualStatusCode
@@ -52,7 +57,7 @@ public class BooksStepDef {
     @And("the response time should be optimal")
     public void responseTimeCheck()
     {
-        System.out.println("✅ GET response time is : "+response.getTime()+ "ms");
+        System.out.println(" GET response time is : "+response.getTime()+ "ms");
     }
 
     @And("the response should contain {int} books")
@@ -73,6 +78,7 @@ public class BooksStepDef {
     }
 
     @And("the book with id {int} should have:")
+
     public void bookWithIdShouldHave(
             int bookId,
             DataTable dataTable) {
@@ -96,24 +102,78 @@ public class BooksStepDef {
         // Convert DataTable into key/value pairs
         var data = dataTable.asMap(String.class, String.class);
 
-        assertEquals(
-                data.get("name"),
-                book.getName()
-        );
+        assertEquals(data.get("name"), book.getName());
         System.out.println("The Book name is:"+ book.getName());
 
-        assertEquals(
-                data.get("type"),
-                book.getType()
-        );
+        assertEquals(data.get("type"), book.getType());
         System.out.println("The Book Type is:"+ book.getType());
 
-        assertEquals(
-                Boolean.parseBoolean(data.get("available")),
-                book.isAvailable()
-        );
+        assertEquals(Boolean.parseBoolean(data.get("available")), book.isAvailable());
         System.out.println("The Book is:"+ book.isAvailable());
 
 
     }
+    @Then("the following books should have:")
+    public void the_following_books_should_have(DataTable dataTable) {
+
+        List<Map<String, String>> expectedBooks =
+                dataTable.asMaps(String.class, String.class);
+
+        List<Integer> actualIds =
+                response.jsonPath().getList("id", Integer.class);
+
+        System.out.println("Actual IDs: " + actualIds);
+        System.out.println("API response:");
+        System.out.println(response.asPrettyString());
+
+        for (Map<String, String> expectedBook : expectedBooks) {
+
+            int expectedId = Integer.parseInt(expectedBook.get("id"));
+            String expectedName = expectedBook.get("name");
+            String expectedType = expectedBook.get("type");
+            boolean expectedAvailable =
+                    Boolean.parseBoolean(expectedBook.get("available"));
+
+            int index = actualIds.indexOf(expectedId);
+
+            System.out.println("********Details for book ID*********** "+expectedId);
+
+            assertThat(
+                    "Book ID not found: " + expectedId,
+                    index,
+                    Matchers.greaterThanOrEqualTo(0)
+            );
+
+            String actualName =
+                    response.jsonPath().getString("[" + index + "].name");
+
+            String actualType =
+                    response.jsonPath().getString("[" + index + "].type");
+
+            boolean actualAvailable =
+                    response.jsonPath().getBoolean("[" + index + "].available");
+
+            assertThat(
+                    "Mismatch in name for book ID: " + expectedId,
+                    actualName,
+                    Matchers.equalTo(expectedName)
+            );
+            System.out.println("The Book name is:"+actualName);
+
+            assertThat(
+                    "Mismatch in type for book ID: " + expectedId,
+                    actualType,
+                    Matchers.equalTo(expectedType)
+            );
+            System.out.println("The Book Type is:"+actualType);
+
+            assertThat(
+                    "Mismatch in available for book ID: " + expectedId,
+                    actualAvailable,
+                    Matchers.equalTo(expectedAvailable)
+            );
+            System.out.println("The Book is:"+ actualAvailable);
+        }
+    }
+
 }
