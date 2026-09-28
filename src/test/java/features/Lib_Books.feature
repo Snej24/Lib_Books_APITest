@@ -1,4 +1,4 @@
-Feature: Validate Books API
+Feature: Validate Books API Testing
 
   Scenario: Validate books returned by the API
     Given I send a GET request to the books endpoint
